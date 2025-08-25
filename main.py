@@ -6,6 +6,7 @@ import chess.pgn
 from IA.Random import RandomChessAI
 from IA.Heuristica import HeuristicChessAI
 from IA.Min_Max import MinMaxChessAI
+from IA.NegaMax import NegamaxChessAI
 
 # Unicode chess pieces mapping for python-chess
 PIECES = {
@@ -62,10 +63,6 @@ def main():
         mode = 'pvai' if sel == '1' else 'aivai'
 
     board = chess.Board()
-    #ai = RandomChessAI()
-    #ai = HeuristicChessAI()
-    ai_white = MinMaxChessAI(depth=4)
-    ai_black = MinMaxChessAI(depth=3)
 
     while not board.is_game_over():
         print_board(board)
@@ -85,4 +82,10 @@ def main():
     exportar_pgn(board)
 
 if __name__ == '__main__':
+    #ai = RandomChessAI()
+    #ai = HeuristicChessAI()
+    #ai_white = MinMaxChessAI(depth=5)
+    #ai_black = MinMaxChessAI(depth=5)
+    ai_white = NegamaxChessAI(depth=5)
+    ai_black = NegamaxChessAI(depth=5)
     main()
