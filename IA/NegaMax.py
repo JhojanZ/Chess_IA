@@ -10,6 +10,7 @@ class NegamaxChessAI(ChessAI):
 
     def __init__(self, depth: int = 3):
         self.depth = depth
+        self.transposition_table = {}
 
     # ------------------ PUBLIC METHOD ------------------ #
     def select_move(self, board: chess.Board, color: chess.Color) -> chess.Move:
@@ -37,8 +38,8 @@ class NegamaxChessAI(ChessAI):
         return best_move
 
     def negamax(self, board, depth, alpha, beta, color):
-        zobrist_key = board.transposition_key()
-        
+        zobrist_key = self.transposition_key(board)
+
         # Buscar en la Transposition Table
         if zobrist_key in self.transposition_table:
             entry_depth, entry_score = self.transposition_table[zobrist_key]
@@ -64,6 +65,13 @@ class NegamaxChessAI(ChessAI):
 
         self.transposition_table[zobrist_key] = (depth, max_eval)
         return max_eval
+
+    def transposition_key(self, board: chess.Board):
+        """Devuelve una clave única para el tablero actual usando Zobrist hashing o FEN como fallback."""
+        if hasattr(board, 'transposition_key'):
+            return board.transposition_key()
+        else:
+            return board.fen()
 
     # ------------------ HELPERS ------------------ #
     def _evaluate(self, board: chess.Board) -> float:

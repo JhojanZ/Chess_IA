@@ -86,6 +86,6 @@ if __name__ == '__main__':
     #ai = HeuristicChessAI()
     #ai_white = MinMaxChessAI(depth=5)
     #ai_black = MinMaxChessAI(depth=5)
-    ai_white = NegamaxChessAI(depth=5)
-    ai_black = NegamaxChessAI(depth=5)
+    ai_white = NegamaxChessAI(depth=4)
+    ai_black = NegamaxChessAI(depth=4)
     main()
