@@ -5,6 +5,7 @@ import chess.pgn
 
 from IA.Random import RandomChessAI
 from IA.Heuristica import HeuristicChessAI
+from IA.Min_Max import MinMaxChessAI
 
 # Unicode chess pieces mapping for python-chess
 PIECES = {
@@ -62,19 +63,25 @@ def main():
 
     board = chess.Board()
     #ai = RandomChessAI()
-    ai = HeuristicChessAI()
-    
+    #ai = HeuristicChessAI()
+    ai_white = MinMaxChessAI(depth=4)
+    ai_black = MinMaxChessAI(depth=3)
+
     while not board.is_game_over():
         print_board(board)
         color = board.turn
         if mode == 'pvai' and color == chess.WHITE:
             move = get_user_move(board, color)
         else:
+            ai = ai_white if color == chess.WHITE else ai_black
             move = ai.select_move(board, color)
+            if move is None:
+                print('No hay movimientos legales disponibles. Juego terminado.')
+                break
             print(f"Maquina ({'blancas' if color == chess.WHITE else 'negras'}) mueve: {board.san(move)} ({move.uci()})")
         board.push(move)
     print_board(board)
-    print('Fin de la partida:', board.result())
+    print('Fin de la partida:', board.result(), "   ", board.is_checkmate())
     exportar_pgn(board)
 
 if __name__ == '__main__':
