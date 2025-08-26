@@ -7,6 +7,8 @@ from IA.Random import RandomChessAI
 from IA.Heuristica import HeuristicChessAI
 from IA.Min_Max import MinMaxChessAI
 from IA.NegaMax import NegamaxChessAI
+from IA.MonteCarloTreeSearch import MonteCarloTreeSearchAI
+import matplotlib.pyplot as plt
 
 # Unicode chess pieces mapping for python-chess
 PIECES = {
@@ -63,29 +65,74 @@ def main():
         mode = 'pvai' if sel == '1' else 'aivai'
 
     board = chess.Board()
+    nodos_blancas = []
+    nodos_negras = []
+    jugadas = []
 
     while not board.is_game_over():
         print_board(board)
         color = board.turn
+        jugadas.append(len(jugadas) + 1)
         if mode == 'pvai' and color == chess.WHITE:
             move = get_user_move(board, color)
-        else:
-            ai = ai_white if color == chess.WHITE else ai_black
-            move = ai.select_move(board, color)
+            nodos_blancas.append(0)
+        elif mode == 'pvai' and color == chess.BLACK:
+            ai = ai_black
+            result = ai.select_move(board, color)
+            if isinstance(result, (tuple, list)):
+                move = result[0]
+                nodos = result[1] if len(result) > 1 else None
+            else:
+                move = result
+                nodos = None
             if move is None:
                 print('No hay movimientos legales disponibles. Juego terminado.')
                 break
+            print(f"Maquina (negras) mueve: {board.san(move)} ({move.uci()})")
+            print(f"Nodos evaluados: {nodos}" if nodos is not None else "")
+            nodos_negras.append(nodos if nodos is not None else 0)
+        else:
+            ai = ai_white if color == chess.WHITE else ai_black
+            result = ai.select_move(board, color)
+            if isinstance(result, (tuple, list)):
+                move = result[0]
+                nodos = result[1] if len(result) > 1 else None
+            else:
+                move = result
+                nodos = None
+            if move is None:
+                print('No hay movimientos legales disponibles. Juego terminado.')
+                break
+            print(f"{move}")
             print(f"Maquina ({'blancas' if color == chess.WHITE else 'negras'}) mueve: {board.san(move)} ({move.uci()})")
+            print(f"Nodos evaluados: {nodos}" if nodos is not None else "")
+            if color == chess.WHITE:
+                nodos_blancas.append(nodos if nodos is not None else 0)
+            else:
+                nodos_negras.append(nodos if nodos is not None else 0)
+
         board.push(move)
     print_board(board)
     print('Fin de la partida:', board.result(), "   ", board.is_checkmate())
     exportar_pgn(board)
 
+    # Graficar nodos analizados por jugada para cada IA
+    plt.figure(figsize=(10,5))
+    plt.plot(range(1, len(nodos_blancas)+1), nodos_blancas, marker='o', label=f"{ai_white.__class__.__name__}")
+    plt.plot(range(1, len(nodos_negras)+1), nodos_negras, marker='s', label=f"{ai_black.__class__.__name__}")
+    plt.xlabel('Jugada')
+    plt.ylabel('Nodos analizados')
+    plt.title('Nodos analizados por jugada (MinMax vs Negamax con Poda), Profundida = 5')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
 if __name__ == '__main__':
-    #ai = RandomChessAI()
-    #ai = HeuristicChessAI()
-    #ai_white = MinMaxChessAI(depth=5)
-    #ai_black = MinMaxChessAI(depth=5)
-    ai_white = NegamaxChessAI(depth=4)
-    ai_black = NegamaxChessAI(depth=4)
+    # Ejemplo para usar MCTS como IA blanca o negra:
+    # ai_white = MonteCarloTreeSearchAI(n_simulations=100)
+    # ai_black = MonteCarloTreeSearchAI(n_simulations=100)
+    #ai_white = MinMaxChessAI(depth=3)
+    ai_white = MonteCarloTreeSearchAI(n_simulations=3000)
+    ai_black = NegamaxChessAI(depth=3)
     main()

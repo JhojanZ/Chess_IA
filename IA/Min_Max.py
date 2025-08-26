@@ -10,12 +10,14 @@ class MinMaxChessAI(ChessAI):
 
     def __init__(self, depth: int = 3):
         self.depth = depth
+        self._nodes_searched = 0
 
     # ------------------ PUBLIC METHOD ------------------ #
     def select_move(self, board: chess.Board, color: chess.Color) -> chess.Move:
         """
         Select the best move for the given position using Minimax with Alpha-Beta pruning.
         """
+        self._nodes_searched = 0
         best_score = float('-inf')
         best_move = None
         alpha, beta = float('-inf'), float('inf')
@@ -31,7 +33,7 @@ class MinMaxChessAI(ChessAI):
 
             alpha = max(alpha, best_score)  # update pruning window
 
-        return best_move
+        return best_move, self._nodes_searched
 
     # ------------------ CORE SEARCH ------------------ #
     def _minmax(self, board, depth, alpha, beta, maximizing, color) -> float:
@@ -41,6 +43,7 @@ class MinMaxChessAI(ChessAI):
         if self._is_terminal(board, depth):
             return self._evaluate(board, color)
 
+        self._nodes_searched += 1
         if maximizing:
             return self._maximize(board, depth, alpha, beta, color)
         else:
