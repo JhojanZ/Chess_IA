@@ -66,9 +66,20 @@ if __name__ == '__main__':
 
 **Ejemplo de uso:**
 ```python
-from IA.Random import RandomChessAI
-ai = RandomChessAI()
-move = ai.select_move(board, color)
+# IA/Random.py
+class RandomChessAI:
+    def select_move(self, board: chess.Board, color: chess.Color):
+        """Devuelve un movimiento elegido al azar entre los legales.
+
+        - board: objeto python-chess con la posición actual.
+        - color: color que está por mover (blancas/negras).
+        """
+        moves = list(board.legal_moves)  # listar movimientos legales
+        # si no hay movimientos (jaque mate o tablas), devolvemos None
+        if not moves:
+            return None
+        # elegimos uno al azar y lo devolvemos
+        return random.choice(moves)
 ```
 
 **Ventajas:** Muy rápido, útil como baseline.
@@ -80,23 +91,79 @@ move = ai.select_move(board, color)
 
 **Descripción:** Evalúa los movimientos legales usando una función heurística (por ejemplo, valor de piezas, control de centro, etc.) y elige el mejor según esa evaluación.
 
+Estas heuristicas son muy utiles debido a que nos permite tener una forma de evaluar la calides de una posicion y poder dar valores numericos a ramas en futuros algoritmos sin necesidad de llegar a su estado terminal
+
+Esta heuristica se compone de varios factores:
+- La calidad de la pieza
+- La ventaja posicional de una pieza y su posicion en el table
+- Estructura de tables
+- Si es mate, tabla o jacke, se da un valor extra (si es mate, se da un infinito matematico)
+
 **Ejemplo de uso:**
 ```python
-from IA.Heuristica import HeuristicChessAI
-ai = HeuristicChessAI()
-move = ai.select_move(board, color)
+# IA/Heuristica.py
+class HeuristicChessAI:
+    def select_move(self, board: chess.Board, color: chess.Color):
+        best_score = float('-inf')
+        best_move = None
+        # Recorremos todos los movimientos legales
+        for move in board.legal_moves:
+            board.push(move)              # aplicar movimiento (stack)
+            score = self.evaluate(board)  # calcular heurística en la nueva posición
+            board.pop()                   # restaurar posición original
+
+            # Si la evaluación es mejor que la mejor conocida, actualizamos
+            if score > best_score:
+                best_score = score
+                best_move = move
+
+        # devolvemos el movimiento con mejor evaluación
+        return best_move
+
+    def evaluate(self, board: chess.Board):
+        # Ejemplo de combinación de factores (normalizar y sumar):
+        #  - material (centipawns)
+        #  - movilidad (nº movimientos legales)
+        #  - seguridad del rey (penalizar enroques perdidos)
+        #  - bonus por mates detectados
+        # Implementa aquí tu función existente: debe devolver un valor en centipawns.
+        pass
 ```
 
 **Fragmento de código típico:**
 ```python
-# IA/Heuristica.py
-class HeuristicChessAI:
-    def select_move(self, board, color):
-        best_score = float('-inf')
+# IA/Min_Max.py
+class MinMaxChessAI:
+    def select_move(self, board: chess.Board, color: chess.Color):
+        # minmax: funcion recursiva que devuelve la evaluación desde la perspectiva del jugador 'color_to_move'
+        def minmax(board, depth, maximizing_player):
+            # condición de corte: profundidad 0 o posición terminal
+            if depth == 0 or board.is_game_over():
+                return self.evaluate(board)
+
+            if maximizing_player:
+                max_eval = float('-inf')
+                for move in board.legal_moves:
+                    board.push(move)
+                    eval = minmax(board, depth - 1, False)
+                    board.pop()
+                    max_eval = max(max_eval, eval)
+                return max_eval
+            else:
+                min_eval = float('inf')
+                for move in board.legal_moves:
+                    board.push(move)
+                    eval = minmax(board, depth - 1, True)
+                    board.pop()
+                    min_eval = min(min_eval, eval)
+                return min_eval
+
+        # Selección del mejor movimiento: probamos cada movimiento y evaluamos
         best_move = None
+        best_score = float('-inf')
         for move in board.legal_moves:
             board.push(move)
-            score = self.evaluate(board)
+            score = minmax(board, self.depth - 1, False)
             board.pop()
             if score > best_score:
                 best_score = score
@@ -124,15 +191,18 @@ move, nodos = ai.select_move(board, color)
 ```python
 # IA/Min_Max.py
 class MinMaxChessAI:
-    def select_move(self, board, color):
-        def minmax(board, depth, maximizing):
+    def select_move(self, board: chess.Board, color: chess.Color):
+        # minmax: funcion recursiva que devuelve la evaluación desde la perspectiva del jugador 'color_to_move'
+        def minmax(board, depth, maximizing_player):
+            # condición de corte: profundidad 0 o posición terminal
             if depth == 0 or board.is_game_over():
                 return self.evaluate(board)
-            if maximizing:
+
+            if maximizing_player:
                 max_eval = float('-inf')
                 for move in board.legal_moves:
                     board.push(move)
-                    eval = minmax(board, depth-1, False)
+                    eval = minmax(board, depth - 1, False)
                     board.pop()
                     max_eval = max(max_eval, eval)
                 return max_eval
@@ -140,21 +210,22 @@ class MinMaxChessAI:
                 min_eval = float('inf')
                 for move in board.legal_moves:
                     board.push(move)
-                    eval = minmax(board, depth-1, True)
+                    eval = minmax(board, depth - 1, True)
                     board.pop()
                     min_eval = min(min_eval, eval)
                 return min_eval
-        # Selección del mejor movimiento
+
+        # Selección del mejor movimiento: probamos cada movimiento y evaluamos
         best_move = None
         best_score = float('-inf')
         for move in board.legal_moves:
             board.push(move)
-            score = minmax(board, self.depth-1, False)
+            score = minmax(board, self.depth - 1, False)
             board.pop()
             if score > best_score:
                 best_score = score
                 best_move = move
-        return best_move, nodos_evaluados
+        return best_move
 ```
 
 **Ventajas:** Considera varios turnos hacia adelante, puede jugar tácticamente.
@@ -165,6 +236,8 @@ class MinMaxChessAI:
 ### 4. NegamaxChessAI
 
 **Descripción:** Variante del MinMax, simplifica la lógica usando simetría entre jugadores. Puede incluir poda alfa-beta para optimizar la búsqueda.
+
+Explicar tambien el hasing utilizado aqui
 
 **Ejemplo de uso:**
 ```python
@@ -177,31 +250,48 @@ move, nodos = ai.select_move(board, color)
 ```python
 # IA/NegaMax.py
 class NegamaxChessAI:
-    def select_move(self, board, color):
-        def negamax(board, depth, alpha, beta, color):
-            if depth == 0 or board.is_game_over():
-                return color * self.evaluate(board)
-            max_eval = float('-inf')
-            for move in board.legal_moves:
-                board.push(move)
-                eval = -negamax(board, depth-1, -beta, -alpha, -color)
-                board.pop()
-                max_eval = max(max_eval, eval)
-                alpha = max(alpha, eval)
+    def __init__(self, depth=3):
+        self.depth = depth
+        self.transposition_table = {}  # Zobrist hash -> (value, depth, flag, best_move)
+        self._init_zobrist()          # inicializa tabla Zobrist (valores aleatorios)
+
+    def negamax(self, board, depth, alpha, beta, color):
+        key = self._zobrist_hash(board)
+        # 1) consulta tabla de transposición (si existe y es válida)
+        if key in self.transposition_table:
+            value, stored_depth, flag, best_move = self.transposition_table[key]
+            # flag indica si value es exacto, o es un bound (LOWER/UPPER)
+            if stored_depth >= depth:
+                if flag == 'EXACT':
+                    return value
+                if flag == 'LOWER':
+                    alpha = max(alpha, value)
+                elif flag == 'UPPER':
+                    beta = min(beta, value)
                 if alpha >= beta:
-                    break  # Poda alfa-beta
-            return max_eval
-        # Selección del mejor movimiento
-        best_move = None
-        best_score = float('-inf')
+                    return value
+
+        # 2) caso terminal o profundidad 0 -> evaluar
+        if depth == 0 or board.is_game_over():
+            return color * self.evaluate(board)  # 'color' = +1 para max, -1 para min
+
+        max_eval = float('-inf')
+        best_move_local = None
         for move in board.legal_moves:
             board.push(move)
-            score = -negamax(board, self.depth-1, float('-inf'), float('inf'), -1)
+            eval = -self.negamax(board, depth - 1, -beta, -alpha, -color)
             board.pop()
-            if score > best_score:
-                best_score = score
-                best_move = move
-        return best_move, nodos_evaluados
+            if eval > max_eval:
+                max_eval = eval
+                best_move_local = move
+            alpha = max(alpha, eval)
+            if alpha >= beta:
+                break  # poda alfa-beta
+
+        # 3) almacenar en tabla de transposición con flag adecuado
+        # flag = 'EXACT' / 'LOWER' / 'UPPER' según alpha/beta
+        self.transposition_table[key] = (max_eval, depth, 'EXACT', best_move_local)
+        return max_eval
 ```
 
 **Ventajas:** Más eficiente que MinMax, especialmente con poda alfa-beta.
